@@ -1,23 +1,18 @@
 #include "stack.h"
 
-
 const Elem_t TRASH_ELEM = 0xDEAD;
 const Canary_t CANARY_ELEM = 0xBADC0FFEE;
-const size_t STACK_CAPASITY = 10;
+const size_t STACK_CAPACITY = 10;
+
+enum stack_status {ALL_IS_OK = 0, NEGATIVE_SIZE = 1 >> 0, NEGATIVE_ITER = 1 >> 1, NEGATIVE_CAPACITY = 1 >> 2,
+                    SIZE_BIGGER_CAPACITY = 1 >> 3, NEXT_ELEM_NOT_TRASH = 1 >> 4};
 
 
-
-
-enum stack_status {ALL_IS_OK = 0, NEGATIVE_SIZE = 1, NEGATIVE_ITER = 2, NEGATIVE_CAPACITY = 4, 
-                    SIZE_BIGGER_CAPACITY = 8, NEXT_ELEM_NOT_TRASH = 16};
-
-
-
-
+char errors[5][50] = {"Stack have negative size\n", "Stack have negative iter\n", "Stack have negative capacity\n", "Stack size bigger than capacity\n", "Elements in the end of stack is not trash\n"};
 int stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func)
 {
-    stk->data = (Elem_t*) calloc(STACK_CAPASITY, sizeof(Elem_t));
-    stk->capacity = STACK_CAPASITY;
+    stk->data = (Elem_t*) calloc(STACK_CAPACITY, sizeof(Elem_t));
+    stk->capacity = STACK_CAPACITY;
     stk->size = 0;
     stk->name = strdup_(name);
     stk->line = line;
@@ -37,19 +32,20 @@ int stack_ok(stack* stk)
 {
     int error = 0;
 
-    if(stk->size < 0) error += NEGATIVE_SIZE;
+    if(stk->size < 0) error |= NEGATIVE_SIZE;
     
-    if(stk->data == 0) error += NEGATIVE_ITER;
+    if(stk->data == 0) error |= NEGATIVE_ITER;
 
-    if(stk->capacity < 0) error += NEGATIVE_CAPACITY;
+    if(stk->capacity < 0) error |= NEGATIVE_CAPACITY;
 
-    if(stk->size > stk->capacity) error += SIZE_BIGGER_CAPACITY;
+    if(stk->size > stk->capacity) error |= SIZE_BIGGER_CAPACITY;
 
     for(long long data_iter = stk->size; data_iter < stk->capacity; data_iter ++)
     {
         if(*(stk->data + data_iter) != TRASH_ELEM) 
         {
-            error += NEXT_ELEM_NOT_TRASH;
+            error |= NEXT_ELEM_NOT_TRASH;
+            return error;
         }
     }
 
@@ -62,19 +58,10 @@ void print_stack_status(int error)
     
     if(error == 0) printf("Stack is OK\n");
 
-    if(error > NEXT_ELEM_NOT_TRASH) printf("%d elements in the end of stack is not trash\n", error/16);
-    error %= NEXT_ELEM_NOT_TRASH;
-    
-    if(error > SIZE_BIGGER_CAPACITY) printf("Stack size bigger than capacity\n");
-    error %= SIZE_BIGGER_CAPACITY;
-    
-    if(error > NEGATIVE_CAPACITY) printf("Stack have negative capacity\n");
-    error %= NEGATIVE_CAPACITY;
-
-    if(error > NEGATIVE_ITER) printf("Stack have negative iter\n");
-    error %= NEGATIVE_ITER;
-
-    if(error > NEGATIVE_SIZE) printf("Stack have negative size\n");
+    for(int error_iter = 0; error_iter < 5; error_iter++)
+    {
+        if((error &= (1 >> error_iter)) > 0) puts(errors[error_iter]);
+    }
 }
 
 void stack_dump(stack* stk, int line, const char* file, const char* func)
@@ -93,7 +80,7 @@ void stack_dump(stack* stk, int line, const char* file, const char* func)
     printf("{\n");
 
     printf("\tsize = %lld\n", stk->size);
-    printf("\tcapasity = %lld\n", stk->capacity);
+    printf("\tcapacity = %lld\n", stk->capacity);
     printf("\tdata[%p]\n", stk->data);
 
     printf("\t{\n");
@@ -143,14 +130,9 @@ int stack_dtor(stack* stk)// возвращает статус стека, ес�
 
 int stack_push(stack* stk, Elem_t value)
 {
-    stk->status = stack_ok(stk);
-    if(stk->status)
-    {
-        printf("\n\nERROR \nWe have problem with stack in stack_push\n");
-        print_stack_status(stk->status);
-        STACK_DUMP(stk);
-        return stk->status;
-    }
+    STK_STATUS(stk);
+
+    if(stk->status) return stk->status;
 
     if(stk->size == stk->capacity)
     {
@@ -173,7 +155,8 @@ int stack_push(stack* stk, Elem_t value)
 
 Elem_t stack_pop(stack* stk) //возвращаем верхний элемент и удаляем его
 {
-    stk->status = stack_ok(stk);
+    STK_STATUS(stk);
+
     if(stk->status)
     {
         printf("\n\nERROR \nWe have problem with stack in stack_pop\n");
@@ -185,6 +168,7 @@ Elem_t stack_pop(stack* stk) //возвращаем верхний элемен�
         printf("We want pop from empty stack\n");
         stk->size = -1;
         stk->status = stack_ok(stk);
+        return TRASH_ELEM;
     }
     
     stk->size -= 1;
