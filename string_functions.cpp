@@ -1,4 +1,4 @@
-#include <stack.h>
+#include "stack.h"
 
 
 int puts_(const char *str)
@@ -29,15 +29,6 @@ size_t strlen_(const char *str)
     }
 
     return len;
-}
-
-char *strchr_(const char *str, int ch)
-{
-    while(*str != '\0' && *str != ch)
-    {
-        str++;
-    }
-    return (char*) str;
 }
 
 char *strcpy_(char *dst, const char *src) // src -откуда копируем(str2), dst - куда копируем(str1)
@@ -101,24 +92,6 @@ char *strncat_(char *dst, const char *src, size_t count)
     }
     *src_iter = '\0';
     return dst;
-}
-
-char *fgets_(char *str, int num, FILE *stream)
-{
-    char *str_iter = str;
-    char symbol = '\0';
-
-    symbol = fgetc(stream);
-
-    while(symbol != '\n' && symbol != EOF && (num) > 0)
-    {
-        num--;
-        *str_iter = symbol;
-        str_iter++;
-        symbol = fgetc(stream);
-    }
-    *str_iter = '\0';
-    return str;
 }
 
 char *strdup_(const char *src)// don't forget use free() !!!!

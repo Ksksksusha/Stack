@@ -15,7 +15,18 @@
 typedef int Elem_t;
 typedef unsigned long long Canary_t;
 
-struct stack;
+struct stack
+{
+    Elem_t* data;
+    long long size;
+    long long capacity;
+    int status;
+
+    char* name;
+    int line;
+    char* file;
+    char* func;
+};
 
 
 //string functions
@@ -23,8 +34,6 @@ struct stack;
 int puts_(const char *str);
 
 size_t strlen_(const char *str);
-
-char *strchr_(const char *str, int ch);
 
 char *strcpy_(char *str1, const char *str2);
 
@@ -34,27 +43,25 @@ char *strcat_(char *str1, const char *str2);
 
 char *strncat_(char *str1, const char *str2, size_t count);
 
-char *fgets_(char *str, int num, FILE *stream);
-
 char *strdup_(const char *str);
 
 int strcmp_(const char *str1, const char *str2);
 
 //stack_functions
 
-size_t stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func);
+int stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func);
 
-size_t stack_ok(stack* stk);
+int stack_ok(stack* stk);
 
-void print_stack_status(size_t error);
+void print_stack_status(int error);
 
 void stack_dump(stack* stk, int line, const char* file, const char* func);
 
-size_t stack_dtor(stack* stk);
+int stack_dtor(stack* stk);
 
-size_t stack_push(stack* stk, Elem_t value);
+int stack_push(stack* stk, Elem_t value);
 
-size_t stack_pop(stack* stk);
+Elem_t stack_pop(stack* stk);
 
 
 #endif //STACK_H
