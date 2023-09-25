@@ -1,12 +1,15 @@
-#include "stack.h"
+//#include "stack.h"
+#include "safety_stack.h"
 
 int main()
 {
-    struct stack stk;
+    //check stack
+
+    /*struct stack stk;
 
     STACK_CTOR(&stk);
 
-    printf("We create stack");
+    printf("We create stack!\n");
 
     STACK_DUMP(&stk);
 
@@ -33,6 +36,39 @@ int main()
 
     printf("%d\n", stack_pop(&stk));
     STACK_DUMP(&stk);
+    */
+
+    // check safety_stack
+
+    struct safety_stack stk2;
+
+    STACK_CTOR_S(&stk2);
+
+    printf("We create safety_stack!\n");
+
+    STACK_DUMP_S(&stk2);
+
+    stack_push_s(&stk2, 5);
+    STACK_DUMP_S(&stk2);
+
+    stack_push_s(&stk2, 4);
+    STACK_DUMP_S(&stk2);
+
+    stack_push_s(&stk2, 3);
+    STACK_DUMP_S(&stk2);
+
+    stack_push_s(&stk2, 2);
+    STACK_DUMP_S(&stk2);
+
+    stack_push_s(&stk2, 1);
+    STACK_DUMP_S(&stk2);
+
+    printf("%d\n", stack_pop_s(&stk2));
+    STACK_DUMP_S(&stk2);
+
+    printf("%d\n", stack_pop_s(&stk2));
+    STACK_DUMP_S(&stk2);
+
 
     return 0;
 }

@@ -1,23 +1,31 @@
 #include "stack.h"
 
 const Elem_t TRASH_ELEM = 0xDEAD;
-const Canary_t CANARY_ELEM = 0xBADC0FFEE;
 const size_t STACK_CAPACITY = 10;
 
-enum stack_status {ALL_IS_OK = 0, NEGATIVE_SIZE = 1 >> 0, NEGATIVE_ITER = 1 >> 1, NEGATIVE_CAPACITY = 1 >> 2,
-                    SIZE_BIGGER_CAPACITY = 1 >> 3, NEXT_ELEM_NOT_TRASH = 1 >> 4};
+enum stack_status {ALL_IS_OK = 0, 
+                    NEGATIVE_SIZE = 1 << 0, 
+                    NEGATIVE_ITER = 1 << 1,
+                    NEGATIVE_CAPACITY = 1 << 2,
+                    SIZE_BIGGER_CAPACITY = 1 << 3, 
+                    NEXT_ELEM_NOT_TRASH = 1 << 4};
 
 
-char errors[5][50] = {"Stack have negative size\n", "Stack have negative iter\n", "Stack have negative capacity\n", "Stack size bigger than capacity\n", "Elements in the end of stack is not trash\n"};
+static char errors[5][50] = {"Stack have negative size\n", 
+                            "Stack have negative iter\n", 
+                            "Stack have negative capacity\n", 
+                            "Stack size bigger than capacity\n", 
+                            "Elements in the end of stack is not trash\n"};
+                            
 int stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func)
 {
     stk->data = (Elem_t*) calloc(STACK_CAPACITY, sizeof(Elem_t));
     stk->capacity = STACK_CAPACITY;
     stk->size = 0;
-    stk->name = strdup_(name);
+    stk->name = strdup(name);
     stk->line = line;
-    stk->file = strdup_(file);
-    stk->func = strdup_(func);
+    stk->file = strdup(file);
+    stk->func = strdup(func);
     stk->status = stack_ok(stk);
 
     for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
@@ -67,15 +75,15 @@ void print_stack_status(int error)
 void stack_dump(stack* stk, int line, const char* file, const char* func)
 {
     printf(" Stack %p ", stk);
-    puts_(stk->name);
+    puts(stk->name);
     printf(" from ");
-    puts_(stk->func);
+    puts(stk->func);
     printf(" (%d) ", stk->line);
-    puts_(stk->func);
+    puts(stk->func);
     printf(" called from ");
-    puts_(file);
+    puts(file);
     printf(" (%d) ", line);
-    puts_(func);
+    puts(func);
 
     printf("{\n");
 
@@ -110,13 +118,13 @@ int stack_dtor(stack* stk)// возвращает статус стека, ес�
     
     free(stk->data);
 
-    strcpy_(stk->file, "-");
+    strcpy(stk->file, "-");
     free(stk->file);
 
-    strcpy_(stk->func, "-");
+    strcpy(stk->func, "-");
     free(stk->func);
 
-    strcpy_(stk->name, "-");
+    strcpy(stk->name, "-");
     free(stk->name);
 
     stk->capacity = -5;
@@ -140,7 +148,7 @@ int stack_push(stack* stk, Elem_t value)
 
         stk->data = (Elem_t *) realloc(stk->data, sizeof(Elem_t) * ((size_t) stk->capacity));
 
-        for(long long stk_iter = stk->size; stk_iter < stk->capacity; stk_iter++)
+        for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
         {
             *(stk->data + stk_iter) = TRASH_ELEM;
         }
@@ -184,4 +192,3 @@ Elem_t stack_pop(stack* stk) //возвращаем верхний элемен�
 
     return pop_elem;
 }
-
