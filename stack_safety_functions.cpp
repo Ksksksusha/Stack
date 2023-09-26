@@ -106,8 +106,8 @@ void stack_dump_s(safety_stack* stk, int line, const char* file, const char* fun
     printf("\tcapacity = %lld\n", stk->capacity);
     printf("\tdata[%p]\n\n", stk->data);
 
-    printf("Left canary = %lld\n", *(stk->canary_left));
-    printf("Right canary = %lld\n\n", *(stk->canary_right));
+    printf("Left canary = %llu\n", *(stk->canary_left));
+    printf("Right canary = %llu\n\n", *(stk->canary_right));
 
     printf("\t{\n");
 
