@@ -1,18 +1,19 @@
 #include "safety_stack.h"
 
-static char errors[11][50] = {"Stack have negative size\n",
-                                "Stack have negative iter\n",
-                                "Stack have negative capacity\n", 
+static char errors[12][50] = {"Stack has negative size\n",
+                                "Stack has negative pointer\n",
+                                "Stack has negative capacity\n", 
                                 "Stack size bigger than capacity\n",
                                 "Elements in the end of stack is not trash\n",
                                 "Left canary catch error in data\n", 
                                 "Right canary catch error in data\n",
-                                "Left canary have negative iter\n", 
-                                "Right canary have negative iter\n",
+                                "Left canary has negative iter\n", 
+                                "Right canary has negative iter\n",
                                 "Left canary catch error in struct\n", 
-                                "Right canary catch error in struct\n"};
+                                "Right canary catch error in struct\n", 
+                                "Hash doesn't match"};
 
-int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file, const char* func)//
+int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file, const char* func)
 {
     void* addr = malloc(sizeof(Canary_t)*2 + sizeof(Elem_t)*STACK_CAPACITY);
 
@@ -22,10 +23,10 @@ int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file
 
     stk->capacity = STACK_CAPACITY;
     stk->size = 0;
-    stk->name = strdup(name);
+    stk->name = name;
     stk->line = line;
-    stk->file = strdup(file);
-    stk->func = strdup(func);
+    stk->file = file;
+    stk->func = func;
     stk->status = stack_ok_s(stk);
 
     *(stk->canary_left) = CANARY_ELEM;
@@ -35,6 +36,9 @@ int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file
     {
         *(stk->data + stk_iter) = TRASH_ELEM;
     }
+
+    stk->hash = murmur_hash(stk);
+
     return stk->status;
 }
 
@@ -45,7 +49,7 @@ int stack_ok_s(safety_stack* stk)
 
     if(stk->size < 0) error |= NEGATIVE_SIZE;
     
-    if(stk->data == 0) error |= NEGATIVE_ITER;
+    if(stk->data == 0) error |= NEGATIVE_POINTER;
 
     if(stk->capacity < 0) error |= NEGATIVE_CAPACITY;
 
@@ -62,6 +66,8 @@ int stack_ok_s(safety_stack* stk)
     if(stk->canary_stack_left != CANARY_ELEM) error |= LEFT_STRUCT_CANARY;
 
     if(stk->canary_stack_right != CANARY_ELEM) error |= RIGHT_STRUCT_CANARY;
+
+    if(stk->hash != murmur_hash(stk)) error |= HASH_ERROR;
 
     for(long long data_iter = stk->size; data_iter < stk->capacity; data_iter ++)
     {
@@ -81,9 +87,9 @@ void print_stack_status_s(int error)
     
     if(error == 0) printf("Stack is OK\n");
 
-    for(int error_iter = 0; error_iter < 11; error_iter++)
+    for(int error_iter = 0; error_iter < 12; error_iter++)
     {
-        if((error &= (1 >> error_iter)) > 0) puts(errors[error_iter]);
+        if((error &= (1 << error_iter)) > 0) puts(errors[error_iter]);
     }
 }
 
@@ -134,24 +140,13 @@ int stack_dtor_s(safety_stack* stk)// возвращает статус стек
         *(stk->data + stk_iter) = TRASH_ELEM;
     }
     
-    free(stk->canary_left);//тк именно на ней начинается заказанный блок памяти
-
-    strcpy(stk->file, "-");
-    free(stk->file);
-
-    strcpy(stk->func, "-");
-    free(stk->func);
-
-    strcpy(stk->name, "-");
-    free(stk->name);
-
     stk->capacity = -5;
 
     stk->size = -3;
 
-    stk->status = stack_ok_s(stk);
+    free(stk->canary_left);//тк именно на ней начинается заказанный блок памяти
 
-    return stk->status;
+    return 0;
 }
 
 int stack_push_s(safety_stack* stk, Elem_t value)
@@ -170,7 +165,7 @@ int stack_push_s(safety_stack* stk, Elem_t value)
         stk->data = (Elem_t*) (stk->canary_left + 1);
         stk->canary_right = (Canary_t*) (stk->data + stk->capacity);
 
-        for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
+        for(long long stk_iter = stk->size; stk_iter < stk->capacity; stk_iter++)
         {
             *(stk->data + stk_iter) = TRASH_ELEM;
         }
@@ -178,6 +173,9 @@ int stack_push_s(safety_stack* stk, Elem_t value)
 
     *(stk->data + stk->size) = value;
     stk->size ++;
+
+    
+    stk->hash = murmur_hash(stk);
 
     stk->status = stack_ok_s(stk);
     return stk->status;
@@ -216,6 +214,63 @@ Elem_t stack_pop_s(safety_stack* stk) //возвращаем верхний эл
         stk->canary_right = (Canary_t*) (stk->data + stk->capacity);
     }
 
+    
+    stk->hash = murmur_hash(stk);
+
     return pop_elem;
 }
 
+
+unsigned int murmur_hash(safety_stack* stk)
+{
+  const unsigned int m = 0x5bd1e995;
+  const unsigned int seed = 0;
+  const int r = 24;
+
+  unsigned int len = (unsigned int) stk->size;
+
+  unsigned int h = seed ^ len;
+
+  const unsigned char * data = (const unsigned char *)stk->data;
+  unsigned int k = 0;
+
+  while (len >= 4)
+  {
+      k  = data[0];
+      k |= data[1] << 8;
+      k |= data[2] << 16;
+      k |= data[3] << 24;
+
+      k *= m;
+      k ^= k >> r;
+      k *= m;
+
+      h *= m;
+      h ^= k;
+
+      data += 4;
+      len -= 4;
+  }
+
+  switch (len)
+  {
+    case 3: 
+        h ^= data[2] << 16;
+        [[fallthrough]];
+    case 2: 
+        h ^= data[1] << 8;
+        [[fallthrough]];
+    case 1:
+        h ^= data[0];
+        h *= m;
+        [[fallthrough]];
+    default: 
+        break;
+  };
+
+  h ^= h >> 13;
+  h *= m;
+  h ^= h >> 15;
+
+  return h;
+}

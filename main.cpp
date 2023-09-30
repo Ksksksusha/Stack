@@ -69,6 +69,6 @@ int main()
     printf("%d\n", stack_pop_s(&stk2));
     STACK_DUMP_S(&stk2);
 
-
+    stack_dtor_s(&stk2);
     return 0;
 }

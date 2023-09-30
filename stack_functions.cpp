@@ -1,6 +1,6 @@
 #include "stack.h"
 
-const Elem_t TRASH_ELEM = 0xDEAD;
+const Elem_t TRASH_ELEM = 0xBA0BAB;
 const size_t STACK_CAPACITY = 10;
 
 enum stack_status {ALL_IS_OK = 0, 
@@ -11,21 +11,21 @@ enum stack_status {ALL_IS_OK = 0,
                     NEXT_ELEM_NOT_TRASH = 1 << 4};
 
 
-static char errors[5][50] = {"Stack have negative size\n", 
-                            "Stack have negative iter\n", 
-                            "Stack have negative capacity\n", 
+static char errors[5][50] = {"Stack has negative size\n", 
+                            "Stack has negative pointer\n", 
+                            "Stack has negative capacity\n", 
                             "Stack size bigger than capacity\n", 
                             "Elements in the end of stack is not trash\n"};
                             
-int stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func)
+int stack_ctor(stack* stk, char* name, int line, char* file, char* func)
 {
     stk->data = (Elem_t*) calloc(STACK_CAPACITY, sizeof(Elem_t));
     stk->capacity = STACK_CAPACITY;
     stk->size = 0;
-    stk->name = strdup(name);
+    stk->name = name;
     stk->line = line;
-    stk->file = strdup(file);
-    stk->func = strdup(func);
+    stk->file = file;
+    stk->func = func;
     stk->status = stack_ok(stk);
 
     for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
@@ -148,7 +148,7 @@ int stack_push(stack* stk, Elem_t value)
 
         stk->data = (Elem_t *) realloc(stk->data, sizeof(Elem_t) * ((size_t) stk->capacity));
 
-        for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
+        for(long long stk_iter = stk->size; stk_iter < stk->capacity; stk_iter++)
         {
             *(stk->data + stk_iter) = TRASH_ELEM;
         }

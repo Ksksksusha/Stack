@@ -38,7 +38,7 @@ struct stack
 
 //stack_functions
 
-int stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func);
+int stack_ctor(stack* stk, char* name, int line, char* file, char* func);
 
 int stack_ok(stack* stk);
 
