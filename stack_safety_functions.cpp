@@ -1,17 +1,19 @@
 #include "safety_stack.h"
 
-static char errors[12][50] = {"Stack has negative size\n",
-                                "Stack has negative pointer\n",
-                                "Stack has negative capacity\n", 
-                                "Stack size bigger than capacity\n",
-                                "Elements in the end of stack is not trash\n",
-                                "Left canary catch error in data\n", 
-                                "Right canary catch error in data\n",
-                                "Left canary has negative iter\n", 
-                                "Right canary has negative iter\n",
-                                "Left canary catch error in struct\n", 
-                                "Right canary catch error in struct\n", 
-                                "Hash doesn't match"};
+static const char errors[12][50] = {
+    "Stack has negative size\n",
+    "Stack has negative pointer\n",
+    "Stack has negative capacity\n", 
+    "Stack size bigger than capacity\n",
+    "Elements in the end of stack is not trash\n",
+    "Left canary catch error in data\n", 
+    "Right canary catch error in data\n",
+    "Left canary has negative iter\n", 
+    "Right canary has negative iter\n",
+    "Left canary catch error in struct\n", 
+    "Right canary catch error in struct\n", 
+    "Hash doesn't match\n",
+};
 
 int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file, const char* func)
 {
@@ -27,10 +29,18 @@ int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file
     stk->line = line;
     stk->file = file;
     stk->func = func;
-    stk->status = stack_ok_s(stk);
 
-    *(stk->canary_left) = CANARY_ELEM;
+    *(stk->canary_left)  = CANARY_ELEM;
     *(stk->canary_right) = CANARY_ELEM;
+
+    
+    if(stk->data == NULL)
+    {
+        printf("ERROR:\nstk->data == NULL\n");
+        stk->status = NEGATIVE_POINTER;
+        STACK_DUMP_S(stk);
+        return stk->status;
+    }
 
     for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
     {
@@ -38,6 +48,8 @@ int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file
     }
 
     stk->hash = murmur_hash(stk);
+
+    stk->status = stack_ok_s(stk);
 
     return stk->status;
 }
@@ -133,18 +145,18 @@ void stack_dump_s(safety_stack* stk, int line, const char* file, const char* fun
     printf("}\n");
 }
 
-int stack_dtor_s(safety_stack* stk)// возвращает статус стека, если он < 0, то мы испортили стек :)
+int stack_dtor_s(safety_stack* stk) // возвращает статус стека, если он < 0, то мы испортили стек :)
 {
     for(long long stk_iter = 0; stk_iter < stk->size ; stk_iter ++)
     {
         *(stk->data + stk_iter) = TRASH_ELEM;
     }
-    
+
     stk->capacity = -5;
 
     stk->size = -3;
 
-    free(stk->canary_left);//тк именно на ней начинается заказанный блок памяти
+    free(stk->canary_left); // тк именно на ней начинается заказанный блок памяти
 
     return 0;
 }
@@ -157,9 +169,17 @@ int stack_push_s(safety_stack* stk, Elem_t value)
 
     if(stk->size == stk->capacity)
     {
-        stk->capacity *= 2;//уже кратна 8, поэтому мы за это не переживаем
+        stk->capacity *= 2; // уже кратна 8, поэтому мы за это не переживаем
 
         void* addr = realloc(stk->canary_left, sizeof(Canary_t)*2 + sizeof(Elem_t)*((size_t) stk->capacity));
+
+        if(stk->data == NULL)
+        {
+            printf("ERROR:\nstk->data == NULL\n");
+            stk->status = NEGATIVE_POINTER;
+            STACK_DUMP_S(stk);
+            return stk->status;
+        }
 
         stk->canary_left = (Canary_t*) addr;
         stk->data = (Elem_t*) (stk->canary_left + 1);
@@ -174,7 +194,6 @@ int stack_push_s(safety_stack* stk, Elem_t value)
     *(stk->data + stk->size) = value;
     stk->size ++;
 
-    
     stk->hash = murmur_hash(stk);
 
     stk->status = stack_ok_s(stk);
@@ -209,12 +228,19 @@ Elem_t stack_pop_s(safety_stack* stk) //возвращаем верхний эл
 
         void* addr = realloc(stk->canary_left, sizeof(Canary_t)*2 + sizeof(Elem_t)*((size_t) stk->capacity));
 
+        if(stk->data == NULL)
+        {
+            printf("ERROR:\nstk->data == NULL\n");
+            stk->status = NEGATIVE_POINTER;
+            STACK_DUMP_S(stk);
+            return stk->status;
+        }
+
         stk->canary_left = (Canary_t*) addr;
         stk->data = (Elem_t*) (stk->canary_left + 1);
         stk->canary_right = (Canary_t*) (stk->data + stk->capacity);
     }
 
-    
     stk->hash = murmur_hash(stk);
 
     return pop_elem;
@@ -223,42 +249,42 @@ Elem_t stack_pop_s(safety_stack* stk) //возвращаем верхний эл
 
 unsigned int murmur_hash(safety_stack* stk)
 {
-  const unsigned int m = 0x5bd1e995;
-  const unsigned int seed = 0;
-  const int r = 24;
+    const unsigned int m = 0x5bd1e995;
+    const unsigned int seed = 0;
+    const unsigned int r = 24;
 
-  unsigned int len = (unsigned int) stk->size;
+    unsigned int len = (unsigned int) stk->size;
 
-  unsigned int h = seed ^ len;
+    unsigned int h = seed ^ len;
 
-  const unsigned char * data = (const unsigned char *)stk->data;
-  unsigned int k = 0;
+    const unsigned char * data = (const unsigned char *)stk->data;
+    unsigned int k = 0;
 
-  while (len >= 4)
-  {
-      k  = data[0];
-      k |= data[1] << 8;
-      k |= data[2] << 16;
-      k |= data[3] << 24;
+    while (len >= 4)
+    {
+        k  = data[0];
+        k |= data[1] << 8u;
+        k |= data[2] << 16u;
+        k |= data[3] << 24u;
 
-      k *= m;
-      k ^= k >> r;
-      k *= m;
+        k *= m;
+        k ^= k >> r;
+        k *= m;
 
-      h *= m;
-      h ^= k;
+        h *= m;
+        h ^= k;
 
-      data += 4;
-      len -= 4;
-  }
+        data += 4;
+        len -= 4;
+    }
 
-  switch (len)
-  {
+    switch (len)
+    {
     case 3: 
-        h ^= data[2] << 16;
+        h ^= data[2] << 16u;
         [[fallthrough]];
     case 2: 
-        h ^= data[1] << 8;
+        h ^= data[1] << 8u;
         [[fallthrough]];
     case 1:
         h ^= data[0];
@@ -266,11 +292,11 @@ unsigned int murmur_hash(safety_stack* stk)
         [[fallthrough]];
     default: 
         break;
-  };
+    };
 
-  h ^= h >> 13;
-  h *= m;
-  h ^= h >> 15;
+    h ^= h >> 13;
+    h *= m;
+    h ^= h >> 15;
 
-  return h;
+    return h;
 }

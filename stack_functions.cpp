@@ -20,18 +20,28 @@ static char errors[5][50] = {"Stack has negative size\n",
 int stack_ctor(stack* stk, char* name, int line, char* file, char* func)
 {
     stk->data = (Elem_t*) calloc(STACK_CAPACITY, sizeof(Elem_t));
+
     stk->capacity = STACK_CAPACITY;
     stk->size = 0;
     stk->name = name;
     stk->line = line;
     stk->file = file;
     stk->func = func;
-    stk->status = stack_ok(stk);
+
+    if(stk->data == NULL)
+    {
+        printf("ERROR:\nstk->data == NULL\n");
+        stk->status = NEGATIVE_ITER;
+        STACK_DUMP(stk);
+        return stk->status;
+    }
 
     for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
     {
         *(stk->data + stk_iter) = TRASH_ELEM;
     }
+
+    stk->status = stack_ok(stk);
     return stk->status;
 }
 
@@ -118,13 +128,10 @@ int stack_dtor(stack* stk)// возвращает статус стека, ес�
     
     free(stk->data);
 
-    strcpy(stk->file, "-");
     free(stk->file);
 
-    strcpy(stk->func, "-");
     free(stk->func);
 
-    strcpy(stk->name, "-");
     free(stk->name);
 
     stk->capacity = -5;
@@ -147,6 +154,14 @@ int stack_push(stack* stk, Elem_t value)
         stk->capacity *= 2;
 
         stk->data = (Elem_t *) realloc(stk->data, sizeof(Elem_t) * ((size_t) stk->capacity));
+
+        if(stk->data == NULL)
+        {
+            printf("ERROR:\nstk->data == NULL\n");
+            stk->status = NEGATIVE_ITER;
+            STACK_DUMP(stk);
+            return stk->status;
+        }
 
         for(long long stk_iter = stk->size; stk_iter < stk->capacity; stk_iter++)
         {
@@ -188,6 +203,14 @@ Elem_t stack_pop(stack* stk) //возвращаем верхний элемен�
         stk->capacity = (stk->capacity + 1)/2;
 
         stk->data = (Elem_t *) realloc(stk->data, sizeof(Elem_t) * ((size_t) stk->capacity));
+
+        if(stk->data == NULL)
+        {
+            printf("ERROR:\nstk->data == NULL\n");
+            stk->status = NEGATIVE_ITER;
+            STACK_DUMP(stk);
+            return TRASH_ELEM;
+        }
     }
 
     return pop_elem;
