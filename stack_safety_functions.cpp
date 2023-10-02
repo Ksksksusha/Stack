@@ -17,7 +17,27 @@ static const char errors[12][50] = {
 
 int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file, const char* func)
 {
+    if(stk == NULL)
+    {
+        printf("ERROR:\nStruct pointer = NULL\n");
+        return -1;
+    }
+
+    if(stk->data)
+    {
+        STACK_DUMP_S(stk);
+        return -2;
+    }
+    
     void* addr = malloc(sizeof(Canary_t)*2 + sizeof(Elem_t)*STACK_CAPACITY);
+
+    if(addr == NULL)
+    {
+        printf("ERROR:\nstk->data == NULL\n");
+        stk->status = NEGATIVE_POINTER;
+        STACK_DUMP_S(stk);
+        return stk->status;
+    }
 
     stk->canary_left = (Canary_t*) addr;
     stk->data = (Elem_t*) (stk->canary_left + 1);
@@ -33,14 +53,6 @@ int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file
     *(stk->canary_left)  = CANARY_ELEM;
     *(stk->canary_right) = CANARY_ELEM;
 
-    
-    if(stk->data == NULL)
-    {
-        printf("ERROR:\nstk->data == NULL\n");
-        stk->status = NEGATIVE_POINTER;
-        STACK_DUMP_S(stk);
-        return stk->status;
-    }
 
     for(long long stk_iter = 0; stk_iter < stk->capacity; stk_iter++)
     {
@@ -147,6 +159,8 @@ void stack_dump_s(safety_stack* stk, int line, const char* file, const char* fun
 
 int stack_dtor_s(safety_stack* stk) // возвращает статус стека, если он < 0, то мы испортили стек :)
 {
+    STK_STATUS_S(stk);
+    
     for(long long stk_iter = 0; stk_iter < stk->size ; stk_iter ++)
     {
         *(stk->data + stk_iter) = TRASH_ELEM;
@@ -173,7 +187,7 @@ int stack_push_s(safety_stack* stk, Elem_t value)
 
         void* addr = realloc(stk->canary_left, sizeof(Canary_t)*2 + sizeof(Elem_t)*((size_t) stk->capacity));
 
-        if(stk->data == NULL)
+        if(addr == NULL)
         {
             printf("ERROR:\nstk->data == NULL\n");
             stk->status = NEGATIVE_POINTER;
@@ -228,7 +242,7 @@ Elem_t stack_pop_s(safety_stack* stk) //возвращаем верхний эл
 
         void* addr = realloc(stk->canary_left, sizeof(Canary_t)*2 + sizeof(Elem_t)*((size_t) stk->capacity));
 
-        if(stk->data == NULL)
+        if(addr == NULL)
         {
             printf("ERROR:\nstk->data == NULL\n");
             stk->status = NEGATIVE_POINTER;

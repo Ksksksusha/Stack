@@ -19,6 +19,18 @@ static const char errors[5][50] = {"Stack has negative size\n",
                             
 int stack_ctor(stack* stk, const char* name, int line, const char* file, const char* func)
 {
+    if(stk == NULL)
+    {
+        printf("ERROR:\nStruct pointer = NULL\n");
+        return -1;
+    }
+
+    if(stk->data)
+    {
+        STACK_DUMP(stk);
+        return -2;
+    }
+    
     stk->data = (Elem_t*) calloc(STACK_CAPACITY, sizeof(Elem_t));
 
     stk->capacity = STACK_CAPACITY;
@@ -121,6 +133,8 @@ void stack_dump(stack* stk, int line, const char* file, const char* func)
 
 int stack_dtor(stack* stk)
 {
+    STK_STATUS(stk);
+
     for(long long stk_iter = 0; stk_iter < stk->size ; stk_iter ++)
     {
         *(stk->data + stk_iter) = TRASH_ELEM;
