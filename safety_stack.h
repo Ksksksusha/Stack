@@ -26,7 +26,7 @@ const Elem_t TRASH_ELEM = 0xBA0BAB;
 const Canary_t CANARY_ELEM = 0xBADC0FFEE;
 const size_t STACK_CAPACITY = 8;// STACK_CAPACITY % 8 = 0!!!!!!!! for canary
 
-enum stack_status {ALL_IS_OK = 0,
+enum stack_status_s {ALL_IS_OK = 0,
                     NEGATIVE_SIZE = 1 << 0, 
                     NEGATIVE_POINTER = 1 << 1, 
                     NEGATIVE_CAPACITY = 1 << 2,

@@ -107,7 +107,7 @@ void print_stack_status_s(int error)
 
 void stack_dump_s(safety_stack* stk, int line, const char* file, const char* func)
 {
-    printf(" Stack %p ", stk);
+    printf(" Safety stack %p ", stk);
     puts(stk->name);
     printf(" from ");
     puts(stk->func);
