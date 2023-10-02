@@ -257,7 +257,7 @@ unsigned int murmur_hash(safety_stack* stk)
 
     unsigned int h = seed ^ len;
 
-    const unsigned char * data = (const unsigned char *)stk->data;
+    const unsigned int * data = (const unsigned int *)stk->data;
     unsigned int k = 0;
 
     while (len >= 4)
