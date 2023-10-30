@@ -38,17 +38,13 @@ enum stack_status_s {ALL_IS_OK = 0,
                     RIGHT_CANARY = 1 << 6, 
                     NEGATIVE_ITER_LEFT_CANARY = 1 << 7, 
                     NEGATIVE_ITER_RIGHT_CANARY = 1 << 8,
-                    LEFT_STRUCT_CANARY = 1 << 9,
-                    RIGHT_STRUCT_CANARY = 1 << 10,
-                    HASH_ERROR = 1 << 11,
-                    NULL_POINTER_STRUCT_STK = 1 << 12};
+                    HASH_ERROR = 1 << 9,
+                    NULL_POINTER_STRUCT_STK = 1 << 10};
 
 
 
 struct safety_stack
 {
-    Canary_t canary_stack_left = CANARY_ELEM;
-
     Canary_t* canary_left = nullptr;
     Canary_t* canary_right = nullptr;
 
@@ -63,8 +59,6 @@ struct safety_stack
     int line;
     const char* file;
     const char* func;
-
-    Canary_t canary_stack_right = CANARY_ELEM;
 };
 
 //safety_stack_functions

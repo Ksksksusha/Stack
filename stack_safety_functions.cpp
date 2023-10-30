@@ -1,6 +1,6 @@
 #include "safety_stack.h"
 
-static const char errors[13][50] = {
+static const char errors[11][50] = {
     "Stack has negative size\n",
     "Stack has negative pointer\n",
     "Stack has negative capacity\n", 
@@ -10,8 +10,6 @@ static const char errors[13][50] = {
     "Right canary catch error in data\n",
     "Left canary has negative iter\n", 
     "Right canary has negative iter\n",
-    "Left canary catch error in struct\n", 
-    "Right canary catch error in struct\n", 
     "Hash doesn't match\n",
     "Stack struct has null pointer\n"
 };
@@ -88,11 +86,7 @@ static int stack_ok_s(safety_stack* stk)
 
     if(stk->canary_left == 0) error |= NEGATIVE_ITER_LEFT_CANARY;
 
-    if(stk->canary_right == 0) error |= NEGATIVE_ITER_RIGHT_CANARY;    
-
-    if(stk->canary_stack_left != CANARY_ELEM) error |= LEFT_STRUCT_CANARY;
-
-    if(stk->canary_stack_right != CANARY_ELEM) error |= RIGHT_STRUCT_CANARY;
+    if(stk->canary_right == 0) error |= NEGATIVE_ITER_RIGHT_CANARY;   
 
     if(stk->hash != murmur_hash(stk)) error |= HASH_ERROR;
 
@@ -223,8 +217,6 @@ int stack_push_s(safety_stack* stk, Elem_t value)
 
 Elem_t stack_pop_s(safety_stack* stk) //возвращаем верхний элемент и удаляем его
 {
-    STK_STATUS_S(stk);
-
     if(stk->status)
     {
         printf("\n\nERROR \nWe have problem with stack in stack_pop\n");
