@@ -4,22 +4,24 @@
 #include <stdio.h>
 #include <math.h>
 #include <assert.h>
-#include <locale>
 #include <sys/stat.h>
 #include <malloc.h>
 
 
 #define STACK_DUMP_S(stk) stack_dump_s((stk), __LINE__, __FILE__, __PRETTY_FUNCTION__)
 #define STACK_CTOR_S(stk) stack_ctor_s((stk), #stk,  __LINE__, __FILE__, __PRETTY_FUNCTION__)
-#define  STK_STATUS_S(stk) stk->status = stack_ok_s(stk);                                               \
-    if(stk->status)                                                                                 \
-    {                                                                                               \
-        printf("\n\nERROR \nWe have problem with stack in %s \n", __PRETTY_FUNCTION__);             \
-        print_stack_status_s(stk->status);                                                            \
-        STACK_DUMP_S(stk);                                                                            \
+#define  STK_STATUS_S(stk)                                                                              \
+    if(stack_ok_s(stk))                                                                                 \
+    {                                                                                                   \
+        printf("\n\nERROR \nWe have problem with stack in %s \n", __PRETTY_FUNCTION__);                 \
+        print_stack_status_s(stk->status);                                                              \
+        STACK_DUMP_S(stk);                                                                              \
+    }else                                                                                               \
+    {                                                                                                   \
+        stk->status = stack_ok_s(stk);                                                                  \
     }
 
-typedef int Elem_t;
+typedef double Elem_t;
 typedef unsigned long long Canary_t;
 
 const Elem_t TRASH_ELEM = 0xBA0BAB;
@@ -38,7 +40,8 @@ enum stack_status_s {ALL_IS_OK = 0,
                     NEGATIVE_ITER_RIGHT_CANARY = 1 << 8,
                     LEFT_STRUCT_CANARY = 1 << 9,
                     RIGHT_STRUCT_CANARY = 1 << 10,
-                    HASH_ERROR = 1 << 11};
+                    HASH_ERROR = 1 << 11,
+                    NULL_POINTER_STRUCT_STK = 1 << 12};
 
 
 
@@ -46,13 +49,13 @@ struct safety_stack
 {
     Canary_t canary_stack_left = CANARY_ELEM;
 
-    Canary_t* canary_left;
-    Canary_t* canary_right;
+    Canary_t* canary_left = nullptr;
+    Canary_t* canary_right = nullptr;
 
     unsigned int hash;
 
     Elem_t* data;//указатель на начало массива, не на канарейку в случае стека с защитой
-    long long size;
+    long long size = 0;
     long long capacity;
     int status;
 
@@ -68,9 +71,9 @@ struct safety_stack
 
 int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file, const char* func);
 
-int stack_ok_s(safety_stack* stk);
+static int stack_ok_s(safety_stack* stk);
 
-void print_stack_status_s(int error);
+static void print_stack_status_s(int error);
 
 void stack_dump_s(safety_stack* stk, int line, const char* file, const char* func);
 
@@ -80,6 +83,6 @@ int stack_push_s(safety_stack* stk, Elem_t value);
 
 Elem_t stack_pop_s(safety_stack* stk);
 
-unsigned int murmur_hash(safety_stack* stk);
+static unsigned int murmur_hash(safety_stack* stk);
 
 #endif //SAFETY_STACK_H

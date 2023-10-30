@@ -1,6 +1,6 @@
 #include "safety_stack.h"
 
-static const char errors[12][50] = {
+static const char errors[13][50] = {
     "Stack has negative size\n",
     "Stack has negative pointer\n",
     "Stack has negative capacity\n", 
@@ -13,32 +13,28 @@ static const char errors[12][50] = {
     "Left canary catch error in struct\n", 
     "Right canary catch error in struct\n", 
     "Hash doesn't match\n",
+    "Stack struct has null pointer\n"
 };
 
 int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file, const char* func)
 {
+
     if(stk == NULL)
     {
         printf("ERROR:\nStruct pointer = NULL\n");
         return -1;
     }
 
-    if(stk->data)
-    {
-        STACK_DUMP_S(stk);
-        return -2;
-    }
-    
     void* addr = malloc(sizeof(Canary_t)*2 + sizeof(Elem_t)*STACK_CAPACITY);
 
-    if(addr == NULL)
+    if(addr == nullptr)
     {
         printf("ERROR:\nstk->data == NULL\n");
         stk->status = NEGATIVE_POINTER;
         STACK_DUMP_S(stk);
         return stk->status;
     }
-
+   
     stk->canary_left = (Canary_t*) addr;
     stk->data = (Elem_t*) (stk->canary_left + 1);
     stk->canary_right = (Canary_t*) (stk->data + STACK_CAPACITY);
@@ -67,9 +63,16 @@ int stack_ctor_s(safety_stack* stk, const char* name, int line, const char* file
 }
 
 
-int stack_ok_s(safety_stack* stk)
+static int stack_ok_s(safety_stack* stk)
 {
     int error = 0;
+
+    if(stk == nullptr) 
+    {
+        printf("Stk is nullptr!\n");
+        error |= NULL_POINTER_STRUCT_STK;
+        return error;
+    }
 
     if(stk->size < 0) error |= NEGATIVE_SIZE;
     
@@ -105,7 +108,7 @@ int stack_ok_s(safety_stack* stk)
     return error;
 }
 
-void print_stack_status_s(int error)
+static void print_stack_status_s(int error)
 {
     printf("\n\nStack status:\n");
     
@@ -113,7 +116,11 @@ void print_stack_status_s(int error)
 
     for(int error_iter = 0; error_iter < 12; error_iter++)
     {
-        if((error &= (1 << error_iter)) > 0) puts(errors[error_iter]);
+        if((error &= (1 << error_iter)) > 0)
+        {
+            puts(errors[error_iter]);
+            printf("\n");
+        } 
     }
 }
 
@@ -145,10 +152,10 @@ void stack_dump_s(safety_stack* stk, int line, const char* file, const char* fun
     {
         if(stk_iter < stk->size)
         {
-            printf("\t\t*[%lld] = %d;\n", stk_iter, *(stk->data + stk_iter));
+            printf("\t\t*[%lld] = %lg;\n", stk_iter, *(stk->data + stk_iter));
         }else
         {
-            printf("\t\t [%lld] = %d;\n", stk_iter, *(stk->data + stk_iter));
+            printf("\t\t [%lld] = %lg;\n", stk_iter, *(stk->data + stk_iter));
         }
     }
 
@@ -261,7 +268,7 @@ Elem_t stack_pop_s(safety_stack* stk) //возвращаем верхний эл
 }
 
 
-unsigned int murmur_hash(safety_stack* stk)
+static unsigned int murmur_hash(safety_stack* stk)
 {
     const unsigned int m = 0x5bd1e995;
     const unsigned int seed = 0;
